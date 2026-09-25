@@ -2,6 +2,7 @@ import { NextFunction, Request, Response, Router } from 'express'
 import NotFoundError from '../errors/not-found-error'
 
 import auth from '../middlewares/auth'
+import rateLimit from '../middlewares/rate-limit'
 import authRouter from './auth'
 import customerRouter from './customers'
 import orderRouter from './order'
@@ -9,6 +10,8 @@ import productRouter from './product'
 import uploadRouter from './upload'
 
 const router = Router()
+
+router.use(rateLimit())
 
 router.use('/auth', authRouter)
 router.use('/product', productRouter)

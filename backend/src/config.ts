@@ -5,6 +5,12 @@ export const { PORT = '3000' } = process.env
 export const { DB_ADDRESS = 'mongodb://127.0.0.1:27017/weblarek' } = process.env
 export const { JWT_SECRET = 'JWT_SECRET' } = process.env
 export const { ORIGIN_ALLOW = 'http://localhost:5173' } = process.env
+
+export const RATE_LIMIT = {
+    enabled: process.env.RATE_LIMITED !== 'false',
+    points: Number(process.env.RATE_LIMIT_POINTS) || 100,
+    duration: Number(process.env.RATE_LIMIT_DURATION) || 60,
+}
 export const ACCESS_TOKEN = {
     secret: process.env.AUTH_ACCESS_TOKEN_SECRET || 'secret-dev',
     expiry: process.env.AUTH_ACCESS_TOKEN_EXPIRY || '10m',

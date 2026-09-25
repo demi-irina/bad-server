@@ -7,15 +7,20 @@ import mongoose from 'mongoose'
 import path from 'path'
 import { DB_ADDRESS, ORIGIN_ALLOW } from './config'
 import errorHandler from './middlewares/error-handler'
+import rateLimit from './middlewares/rate-limit'
 import serveStatic from './middlewares/serverStatic'
 import routes from './routes'
 
 const { PORT = 3000 } = process.env
 const app = express()
 
+app.set('trust proxy', 1)
+
 app.use(cookieParser())
 
 app.use(cors({ origin: ORIGIN_ALLOW, credentials: true }))
+
+app.use(rateLimit(10))
 
 app.use(serveStatic(path.join(__dirname, 'public')))
 
