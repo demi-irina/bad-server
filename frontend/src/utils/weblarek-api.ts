@@ -30,9 +30,12 @@ export type ApiListResponse<Type> = {
     items: Type[]
 }
 
+const SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS']
+
 class Api {
     private readonly baseUrl: string
     protected options: RequestInit
+    private csrfToken: string | null = null
 
     constructor(baseUrl: string, options: RequestInit = {}) {
         this.baseUrl = baseUrl
@@ -53,12 +56,48 @@ class Api {
                   )
     }
 
-    protected async request<T>(endpoint: string, options: RequestInit) {
+    private async getCsrfToken(force = false): Promise<string> {
+        if (!force && this.csrfToken) {
+            return this.csrfToken
+        }
+        const res = await fetch(`${this.baseUrl}/auth/csrf-token`, {
+            method: 'GET',
+            credentials: 'include',
+        })
+        if (!res.ok) {
+            throw new Error('Не удалось получить CSRF-токен')
+        }
+        const { csrfToken } = await res.json()
+        this.csrfToken = csrfToken
+        return csrfToken
+    }
+
+    protected async request<T>(
+        endpoint: string,
+        options: RequestInit,
+        isCsrfRetry = false
+    ): Promise<T> {
+        const method = (options.method ?? 'GET').toUpperCase()
+        const needsCsrf = !SAFE_METHODS.includes(method)
+
+        const headers: Record<string, string> = {
+            ...((this.options.headers as Record<string, string>) ?? {}),
+            ...((options.headers as Record<string, string>) ?? {}),
+        }
+        if (needsCsrf) {
+            headers['X-CSRF-Token'] = await this.getCsrfToken(isCsrfRetry)
+        }
+
         try {
             const res = await fetch(`${this.baseUrl}${endpoint}`, {
                 ...this.options,
                 ...options,
+                headers,
+                credentials: options.credentials ?? 'include',
             })
+            if (needsCsrf && res.status === 403 && !isCsrfRetry) {
+                return this.request<T>(endpoint, options, true)
+            }
             return await this.handleResponse<T>(res)
         } catch (error) {
             return Promise.reject(error)
