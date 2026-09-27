@@ -9,18 +9,102 @@ export enum PaymentType {
     Online = 'online',
 }
 
+export enum StatusType {
+    Cancelled = 'cancelled',
+    Completed = 'completed',
+    New = 'new',
+    Delivering = 'delivering',
+}
+
+const objectId = Joi.string().custom((value, helpers) => {
+    if (Types.ObjectId.isValid(value)) {
+        return value
+    }
+    return helpers.message({ custom: 'Невалидный id' })
+})
+
+const pagination = {
+    page: Joi.number().integer().min(1).empty(''),
+    limit: Joi.number().integer().min(1).empty(''),
+}
+
+const search = Joi.string().max(100).empty('')
+const sortOrder = Joi.string().valid('asc', 'desc').empty('')
+
+export const validateOrdersQuery = celebrate({
+    query: Joi.object().keys({
+        ...pagination,
+        sortField: Joi.string()
+            .valid('createdAt', 'totalAmount', 'orderNumber', 'status')
+            .empty(''),
+        sortOrder,
+        status: Joi.string()
+            .valid(...Object.values(StatusType))
+            .empty(''),
+        totalAmountFrom: Joi.number().empty(''),
+        totalAmountTo: Joi.number().empty(''),
+        orderDateFrom: Joi.date().iso().empty(''),
+        orderDateTo: Joi.date().iso().empty(''),
+        search,
+    }),
+})
+
+export const validateUserOrdersQuery = celebrate({
+    query: Joi.object().keys({
+        ...pagination,
+        search,
+    }),
+})
+
+export const validateCustomersQuery = celebrate({
+    query: Joi.object().keys({
+        ...pagination,
+        sortField: Joi.string()
+            .valid(
+                'createdAt',
+                'totalAmount',
+                'orderCount',
+                'lastOrderDate',
+                'name'
+            )
+            .empty(''),
+        sortOrder,
+        registrationDateFrom: Joi.date().iso().empty(''),
+        registrationDateTo: Joi.date().iso().empty(''),
+        lastOrderDateFrom: Joi.date().iso().empty(''),
+        lastOrderDateTo: Joi.date().iso().empty(''),
+        totalAmountFrom: Joi.number().empty(''),
+        totalAmountTo: Joi.number().empty(''),
+        orderCountFrom: Joi.number().integer().empty(''),
+        orderCountTo: Joi.number().integer().empty(''),
+        search,
+    }),
+})
+
+export const validateProductsQuery = celebrate({
+    query: Joi.object().keys({ ...pagination }),
+})
+
+const orderNumberParam = Joi.object().keys({
+    orderNumber: Joi.number().integer().min(1).required(),
+})
+
+export const validateOrderNumber = celebrate({ params: orderNumberParam })
+
+export const validateOrderStatusUpdate = celebrate({
+    params: orderNumberParam,
+    body: Joi.object().keys({
+        status: Joi.string()
+            .valid(...Object.values(StatusType))
+            .required(),
+    }),
+})
+
 // валидация id
 export const validateOrderBody = celebrate({
     body: Joi.object().keys({
         items: Joi.array()
-            .items(
-                Joi.string().custom((value, helpers) => {
-                    if (Types.ObjectId.isValid(value)) {
-                        return value
-                    }
-                    return helpers.message({ custom: 'Невалидный id' })
-                })
-            )
+            .items(objectId)
             .messages({
                 'array.empty': 'Не указаны товары',
             }),
@@ -88,16 +172,11 @@ export const validateProductUpdateBody = celebrate({
 })
 
 export const validateObjId = celebrate({
-    params: Joi.object().keys({
-        productId: Joi.string()
-            .required()
-            .custom((value, helpers) => {
-                if (Types.ObjectId.isValid(value)) {
-                    return value
-                }
-                return helpers.message({ any: 'Невалидный id' })
-            }),
-    }),
+    params: Joi.object().keys({ productId: objectId.required() }),
+})
+
+export const validateIdParam = celebrate({
+    params: Joi.object().keys({ id: objectId.required() }),
 })
 
 export const validateUserBody = celebrate({

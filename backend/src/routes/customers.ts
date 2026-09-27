@@ -6,12 +6,16 @@ import {
     updateCustomer,
 } from '../controllers/customers'
 import auth from '../middlewares/auth'
+import {
+    validateCustomersQuery,
+    validateIdParam,
+} from '../middlewares/validations'
 
 const customerRouter = Router()
 
-customerRouter.get('/', auth, getCustomers)
-customerRouter.get('/:id', auth, getCustomerById)
-customerRouter.patch('/:id', auth, updateCustomer)
-customerRouter.delete('/:id', auth, deleteCustomer)
+customerRouter.get('/', auth, validateCustomersQuery, getCustomers)
+customerRouter.get('/:id', auth, validateIdParam, getCustomerById)
+customerRouter.patch('/:id', auth, validateIdParam, updateCustomer)
+customerRouter.delete('/:id', auth, validateIdParam, deleteCustomer)
 
 export default customerRouter
