@@ -6,6 +6,7 @@ import NotFoundError from '../errors/not-found-error'
 import Order, { IOrder } from '../models/order'
 import Product, { IProduct } from '../models/product'
 import User from '../models/user'
+import normalizePagination from '../utils/pagination'
 
 // eslint-disable-next-line max-len
 // GET /orders?page=2&limit=5&sort=totalAmount&order=desc&orderDateFrom=2024-07-01&orderDateTo=2024-08-01&status=delivering&totalAmountFrom=100&totalAmountTo=1000&search=%2B1
@@ -17,8 +18,8 @@ export const getOrders = async (
 ) => {
     try {
         const {
-            page = 1,
-            limit = 10,
+            page: rawPage,
+            limit: rawLimit,
             sortField = 'createdAt',
             sortOrder = 'desc',
             status,
@@ -28,6 +29,8 @@ export const getOrders = async (
             orderDateTo,
             search,
         } = req.query
+
+        const { page, limit, skip } = normalizePagination(rawPage, rawLimit)
 
         const filters: FilterQuery<Partial<IOrder>> = {}
 
@@ -112,8 +115,8 @@ export const getOrders = async (
 
         aggregatePipeline.push(
             { $sort: sort },
-            { $skip: (Number(page) - 1) * Number(limit) },
-            { $limit: Number(limit) },
+            { $skip: skip },
+            { $limit: limit },
             {
                 $group: {
                     _id: '$_id',
@@ -129,15 +132,15 @@ export const getOrders = async (
 
         const orders = await Order.aggregate(aggregatePipeline)
         const totalOrders = await Order.countDocuments(filters)
-        const totalPages = Math.ceil(totalOrders / Number(limit))
+        const totalPages = Math.ceil(totalOrders / limit)
 
         res.status(200).json({
             orders,
             pagination: {
                 totalOrders,
                 totalPages,
-                currentPage: Number(page),
-                pageSize: Number(limit),
+                currentPage: page,
+                pageSize: limit,
             },
         })
     } catch (error) {
@@ -152,11 +155,10 @@ export const getOrdersCurrentUser = async (
 ) => {
     try {
         const userId = res.locals.user._id
-        const { search, page = 1, limit = 5 } = req.query
-        const options = {
-            skip: (Number(page) - 1) * Number(limit),
-            limit: Number(limit),
-        }
+        const { search, page: rawPage, limit: rawLimit } = req.query
+        const { page, limit, skip } = normalizePagination(rawPage, rawLimit, {
+            defaultLimit: 5,
+        })
 
         const user = await User.findById(userId)
             .populate({
@@ -201,17 +203,17 @@ export const getOrdersCurrentUser = async (
         }
 
         const totalOrders = orders.length
-        const totalPages = Math.ceil(totalOrders / Number(limit))
+        const totalPages = Math.ceil(totalOrders / limit)
 
-        orders = orders.slice(options.skip, options.skip + options.limit)
+        orders = orders.slice(skip, skip + limit)
 
         return res.send({
             orders,
             pagination: {
                 totalOrders,
                 totalPages,
-                currentPage: Number(page),
-                pageSize: Number(limit),
+                currentPage: page,
+                pageSize: limit,
             },
         })
     } catch (error) {

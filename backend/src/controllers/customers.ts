@@ -3,6 +3,7 @@ import { FilterQuery } from 'mongoose'
 import NotFoundError from '../errors/not-found-error'
 import Order from '../models/order'
 import User, { IUser } from '../models/user'
+import normalizePagination from '../utils/pagination'
 
 // TODO: Добавить guard admin
 // eslint-disable-next-line max-len
@@ -14,8 +15,8 @@ export const getCustomers = async (
 ) => {
     try {
         const {
-            page = 1,
-            limit = 10,
+            page: rawPage,
+            limit: rawLimit,
             sortField = 'createdAt',
             sortOrder = 'desc',
             registrationDateFrom,
@@ -28,6 +29,8 @@ export const getCustomers = async (
             orderCountTo,
             search,
         } = req.query
+
+        const { page, limit, skip } = normalizePagination(rawPage, rawLimit)
 
         const filters: FilterQuery<Partial<IUser>> = {}
 
@@ -114,11 +117,7 @@ export const getCustomers = async (
             sort[sortField as string] = sortOrder === 'desc' ? -1 : 1
         }
 
-        const options = {
-            sort,
-            skip: (Number(page) - 1) * Number(limit),
-            limit: Number(limit),
-        }
+        const options = { sort, skip, limit }
 
         const users = await User.find(filters, null, options).populate([
             'orders',
@@ -137,15 +136,15 @@ export const getCustomers = async (
         ])
 
         const totalUsers = await User.countDocuments(filters)
-        const totalPages = Math.ceil(totalUsers / Number(limit))
+        const totalPages = Math.ceil(totalUsers / limit)
 
         res.status(200).json({
             customers: users,
             pagination: {
                 totalUsers,
                 totalPages,
-                currentPage: Number(page),
-                pageSize: Number(limit),
+                currentPage: page,
+                pageSize: limit,
             },
         })
     } catch (error) {
