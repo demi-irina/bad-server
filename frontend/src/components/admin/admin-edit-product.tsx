@@ -150,7 +150,7 @@ export default function AdminEditProduct() {
                 extraClass={styles.admin__file}
                 inputRef={fileRef}
                 label='Заменить изображение'
-                accept='image/*,.png,.jpeg,.jpg,.svg'
+                accept='image/png,image/jpeg,image/gif'
                 fileName={currentProduct?.image.originalName}
             />
             <div className={styles.admin__buttons}>
