@@ -216,6 +216,25 @@ export const validateUserBody = celebrate({
     }),
 })
 
+export const validateUpdateCurrentUser = celebrate({
+    body: Joi.object()
+        .keys({
+            name: Joi.string().min(2).max(30),
+            phone: Joi.string().pattern(phoneRegExp),
+        })
+        .min(1),
+})
+
+export const validateUpdateCustomer = celebrate({
+    body: Joi.object()
+        .keys({
+            name: Joi.string().min(2).max(30),
+            email: Joi.string().max(MAX_EMAIL).email(),
+            phone: Joi.string().pattern(phoneRegExp),
+        })
+        .min(1),
+})
+
 export const validateAuthentication = celebrate({
     body: Joi.object().keys({
         email: Joi.string()

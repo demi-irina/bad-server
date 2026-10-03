@@ -11,13 +11,14 @@ import {
 import auth from '../middlewares/auth'
 import {
     validateAuthentication,
+    validateUpdateCurrentUser,
     validateUserBody,
 } from '../middlewares/validations'
 
 const authRouter = Router()
 
 authRouter.get('/user', auth, getCurrentUser)
-authRouter.patch('/me', auth, updateCurrentUser)
+authRouter.patch('/me', auth, validateUpdateCurrentUser, updateCurrentUser)
 authRouter.get('/user/roles', auth, getCurrentUserRoles)
 authRouter.post('/login', validateAuthentication, login)
 authRouter.get('/token', refreshAccessToken)
