@@ -5,17 +5,20 @@ import {
     getCustomers,
     updateCustomer,
 } from '../controllers/customers'
-import auth from '../middlewares/auth'
+import auth, { roleGuardMiddleware } from '../middlewares/auth'
 import {
     validateCustomersQuery,
     validateIdParam,
 } from '../middlewares/validations'
+import { Role } from '../models/user'
 
 const customerRouter = Router()
 
-customerRouter.get('/', auth, validateCustomersQuery, getCustomers)
-customerRouter.get('/:id', auth, validateIdParam, getCustomerById)
-customerRouter.patch('/:id', auth, validateIdParam, updateCustomer)
-customerRouter.delete('/:id', auth, validateIdParam, deleteCustomer)
+customerRouter.use(auth, roleGuardMiddleware(Role.Admin))
+
+customerRouter.get('/', validateCustomersQuery, getCustomers)
+customerRouter.get('/:id', validateIdParam, getCustomerById)
+customerRouter.patch('/:id', validateIdParam, updateCustomer)
+customerRouter.delete('/:id', validateIdParam, deleteCustomer)
 
 export default customerRouter

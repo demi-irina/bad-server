@@ -2,7 +2,9 @@ import { NextFunction, Request, Response, Router } from 'express'
 import { MulterError } from 'multer'
 import { uploadFile } from '../controllers/upload'
 import BadRequestError from '../errors/bad-request-error'
+import { roleGuardMiddleware } from '../middlewares/auth'
 import fileMiddleware, { MAX_FILE_SIZE } from '../middlewares/file'
+import { Role } from '../models/user'
 
 const upload = (req: Request, res: Response, next: NextFunction) =>
     fileMiddleware.single('file')(req, res, (err: unknown) => {
@@ -19,6 +21,6 @@ const upload = (req: Request, res: Response, next: NextFunction) =>
     })
 
 const uploadRouter = Router()
-uploadRouter.post('/', upload, uploadFile)
+uploadRouter.post('/', roleGuardMiddleware(Role.Admin), upload, uploadFile)
 
 export default uploadRouter
