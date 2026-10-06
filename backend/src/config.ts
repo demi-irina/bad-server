@@ -13,11 +13,11 @@ export const RATE_LIMIT = {
     duration: Number(process.env.RATE_LIMIT_DURATION) || 60,
 }
 export const ACCESS_TOKEN = {
-    secret: process.env.AUTH_ACCESS_TOKEN_SECRET || 'secret-dev',
+    secret: process.env.AUTH_ACCESS_TOKEN_SECRET || 'access-secret-dev',
     expiry: process.env.AUTH_ACCESS_TOKEN_EXPIRY || '10m',
 }
 export const REFRESH_TOKEN = {
-    secret: process.env.AUTH_REFRESH_TOKEN_SECRET || 'secret-dev',
+    secret: process.env.AUTH_REFRESH_TOKEN_SECRET || 'refresh-secret-dev',
     expiry: process.env.AUTH_REFRESH_TOKEN_EXPIRY || '7d',
     cookie: {
         name: 'refreshToken',
