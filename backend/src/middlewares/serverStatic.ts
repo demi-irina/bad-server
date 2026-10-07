@@ -15,6 +15,8 @@ export default function serveStatic(baseDir: string) {
             if (err || !stats.isFile()) {
                 return next()
             }
+            res.setHeader('Cache-Control', 'public, max-age=86400, immutable')
+
             return res.sendFile(filePath, (sendErr) => {
                 if (sendErr) {
                     next(sendErr)
