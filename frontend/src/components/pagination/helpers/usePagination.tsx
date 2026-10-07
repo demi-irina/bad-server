@@ -1,8 +1,9 @@
 import { AsyncThunk } from '@reduxjs/toolkit'
 import { useDispatch, useSelector } from '@store/hooks'
-import { RootState } from '@store/store'
-import { useEffect, useState } from 'react'
+import { AppDispatch, RootState } from '@store/store'
+import { useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { WebLarekAPI } from '../../../utils/weblarek-api'
 
 interface PaginationResult<_, U> {
     data: U[]
@@ -15,8 +16,20 @@ interface PaginationResult<_, U> {
     setLimit: (limit: number) => void
 }
 
+type ThunkConfig = {
+    extra: WebLarekAPI
+    state: RootState
+    dispatch: AppDispatch
+}
+
+type PaginatedPayload = {
+    pagination?: { totalPages: number }
+}
+
+type QueryParams = Record<string, string | number>
+
 const usePagination = <T, U>(
-    asyncAction: AsyncThunk<T, Record<string, unknown>, any>,
+    asyncAction: AsyncThunk<T, Record<string, unknown>, ThunkConfig>,
     selector: (state: RootState) => U[],
     defaultLimit: number
 ): PaginationResult<T, U> => {
@@ -32,32 +45,48 @@ const usePagination = <T, U>(
 
     const limit = Number(searchParams.get('limit')) || defaultLimit
 
-    const fetchData = async (params: Record<string, any>) => {
-        const response: any = await dispatch(asyncAction(params))
-        setTotalPages(response.payload.pagination.totalPages)
-    }
+    const fetchData = useCallback(
+        async (params: Record<string, unknown>) => {
+            const response = await dispatch(asyncAction(params))
+            const payload = response.payload as PaginatedPayload | undefined
+            setTotalPages(payload?.pagination?.totalPages ?? 1)
+        },
+        [dispatch, asyncAction]
+    )
+
+    const updateURL = useCallback(
+        (newParams: Record<string, string | number | undefined>) => {
+            const updatedParams = new URLSearchParams(searchParams)
+            Object.entries(newParams).forEach(([key, value]) => {
+                if (value !== undefined) {
+                    updatedParams.set(key, value.toString())
+                } else {
+                    updatedParams.delete(key)
+                }
+            })
+            setSearchParams(updatedParams)
+        },
+        [searchParams, setSearchParams]
+    )
+
+    const setPage = useCallback(
+        (page: number) => {
+            const newPage = Math.max(1, Math.min(page, totalPages))
+            updateURL({ page: newPage, limit })
+        },
+        [totalPages, limit, updateURL]
+    )
 
     useEffect(() => {
-        const params = Object.fromEntries(searchParams.entries())
-        fetchData({ ...params, page: currentPage, limit }).then(() => {
-            if (data.length === 0 && currentPage > 1) {
-                setPage(1)
-            }
-        })
-    }, [currentPage, limit, searchParams])
+        const params = Object.fromEntries(searchParams.entries()) as QueryParams
+        fetchData({ ...params, page: currentPage, limit })
+    }, [currentPage, limit, searchParams, fetchData])
 
-    const updateURL = (newParams: Record<string, any>) => {
-        3
-        const updatedParams = new URLSearchParams(searchParams)
-        Object.entries(newParams).forEach(([key, value]) => {
-            if (value !== undefined) {
-                updatedParams.set(key, value.toString())
-            } else {
-                updatedParams.delete(key)
-            }
-        })
-        setSearchParams(updatedParams)
-    }
+    useEffect(() => {
+        if (data.length === 0 && currentPage > 1) {
+            setPage(1)
+        }
+    }, [data.length, currentPage, setPage])
 
     const nextPage = () => {
         if (currentPage < totalPages) {
@@ -69,11 +98,6 @@ const usePagination = <T, U>(
         if (currentPage > 1) {
             updateURL({ page: currentPage - 1, limit })
         }
-    }
-
-    const setPage = (page: number) => {
-        const newPage = Math.max(1, Math.min(page, totalPages))
-        updateURL({ page: newPage, limit })
     }
 
     const setLimit = (newLimit: number) => {
