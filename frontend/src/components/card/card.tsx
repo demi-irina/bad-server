@@ -71,21 +71,23 @@ export default function Card({
                     {price && full && (
                         <Button
                             onClick={() => {
-                                isBasket
-                                    ? navigate(
-                                          { pathname: AppRoute.Basket },
-                                          {
-                                              state: {
-                                                  background: {
-                                                      ...location,
-                                                      pathname: '/',
-                                                      state: null,
-                                                  },
-                                              },
-                                              replace: true,
-                                          }
-                                      )
-                                    : addProductCart(dataCard)
+                                if (!isBasket) {
+                                    addProductCart(dataCard)
+                                    return
+                                }
+                                navigate(
+                                    { pathname: AppRoute.Basket },
+                                    {
+                                        state: {
+                                            background: {
+                                                ...location,
+                                                pathname: '/',
+                                                state: null,
+                                            },
+                                        },
+                                        replace: true,
+                                    }
+                                )
                             }}
                         >
                             {!isBasket ? 'В корзину' : 'В корзине'}

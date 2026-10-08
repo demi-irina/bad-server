@@ -117,7 +117,7 @@ class Api {
     ) => {
         try {
             return await this.request<T>(endpoint, options)
-        } catch (error) {
+        } catch {
             const refreshData = await this.refreshToken()
             if (!refreshData.success) {
                 return Promise.reject(refreshData)
